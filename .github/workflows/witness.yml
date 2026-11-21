@@ -8,6 +8,8 @@ on:
 permissions:
   contents: write
   issues: write
+  id-token: write
+  attestations: write
 
 concurrency:
   group: witness
@@ -26,6 +28,7 @@ jobs:
         run: node witness.mjs
         continue-on-error: true
       - name: Record what was witnessed
+        id: record
         run: |
           git config user.name "obsignia-witness"
           git config user.email "obsignia-witness@users.noreply.github.com"
@@ -33,7 +36,13 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "Witness: through entry $(node -p "require('./state.json').lastToSeq")"
             git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Publish a signed attestation of the witnessed state
+        if: steps.run.outcome == 'success' && steps.record.outputs.changed == 'true'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: state.json
       - name: Raise an alarm
         if: steps.run.outcome == 'failure'
         env:

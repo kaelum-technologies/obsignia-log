@@ -3,7 +3,8 @@
 // independently (Ed25519 signature, link to the previous batch, and each RFC 3161 timestamp
 // down to the authority's pinned root), and commits what it has checked to this repository.
 // Git history is public and append-only, so a later rewrite of an already-witnessed batch,
-// a changed key or a broken link is caught here and raised as a failed run and an issue.
+// a changed key, an unendorsed new key or a broken link is caught here and raised as a failed
+// run and an issue. Co-signatures and signed attestations are checked and recorded as well.
 import fs from 'node:fs';
 import path from 'node:path';
 import * as pkijs from 'pkijs';
@@ -51,11 +52,35 @@ const keysRes = await call({ action: 'keys' });
 if (keysRes.status >= 400 || !Array.isArray(keysRes.data.keys)) {
   console.log('Signed tree heads are not published yet. Nothing further to witness.');
 } else {
-  for (const k of keysRes.data.keys) {
+  // A key after the first must carry an endorsement signed by a key already witnessed here.
+  const known = () => (fs.existsSync('keys') ? fs.readdirSync('keys').map((f) => readJson(`keys/${f}`)) : []);
+  const ordered = [...keysRes.data.keys].sort((a, b) => String(a.activatedAt).localeCompare(String(b.activatedAt)));
+  for (const k of ordered) {
     const f = `keys/${k.kid}.json`; const seen = readJson(f, null);
     if (seen && canonical(seen.publicKeyJwk) !== canonical(k.publicKeyJwk)) alarm(`Key ${k.kid} changed after it was witnessed.`);
-    if (!seen) { writeJson(f, { kid: k.kid, alg: k.alg, publicKeyJwk: k.publicKeyJwk, activatedAt: k.activatedAt, firstWitnessedAt: new Date().toISOString() }); console.log(`New key witnessed: ${k.kid}`); }
+    if (seen) {
+      // Status and custody may change (active to retired); the key itself may not.
+      if (seen.status !== k.status || seen.custody !== (k.custody || 'platform')) writeJson(f, { ...seen, status: k.status, custody: k.custody || 'platform', retiredAt: k.retiredAt || null });
+      continue;
+    }
+    const witnessedKeys = known();
+    let endorsement = null;
+    if (witnessedKeys.length) {
+      const e = await v.verifyEndorsement(k, witnessedKeys);
+      if (!e.ok) { alarm(`New key ${k.kid} is not endorsed by a witnessed key: ${e.note}`); continue; }
+      endorsement = k.endorsement;
+      console.log(`New key ${k.kid}: ${e.note}`);
+    }
+    writeJson(f, { kid: k.kid, alg: k.alg, publicKeyJwk: k.publicKeyJwk, custody: k.custody || 'platform', status: k.status, activatedAt: k.activatedAt, retiredAt: k.retiredAt || null, endorsement, firstWitnessedAt: new Date().toISOString() });
+    console.log(`New key witnessed: ${k.kid}`);
   }
+  // Co-signers: record each registered key; a key must never change once witnessed.
+  for (const c of keysRes.data.cosigners || []) {
+    const f = `cosigners/${c.kid}.json`; const seen = readJson(f, null);
+    if (seen && canonical(seen.publicKeyJwk) !== canonical(c.publicKeyJwk)) alarm(`Co-signer key ${c.kid} changed after it was witnessed.`);
+    if (!seen) { writeJson(f, { kid: c.kid, name: c.name, role: c.role, publicKeyJwk: c.publicKeyJwk, addedAt: c.addedAt, ledgerSeq: c.ledgerSeq ?? null, firstWitnessedAt: new Date().toISOString() }); console.log(`New co-signer witnessed: ${c.name} (${c.kid})`); }
+  }
+  const cosigners = Object.fromEntries(fs.existsSync('cosigners') ? fs.readdirSync('cosigners').map((f) => { const c = readJson(`cosigners/${f}`); return [c.kid, c]; }) : []);
   // Nothing already witnessed may be withdrawn, altered or replaced.
   const walk = (d) => (fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${d}/${e.name}`) : [e.name])) : []);
   const witnessedIds = new Set(walk('log').map((f) => (f.match(/-(ANCH-.+)\.json$/) || [])[1]).filter(Boolean));
@@ -86,13 +111,34 @@ if (keysRes.status >= 400 || !Array.isArray(keysRes.data.keys)) {
     const witnessed = [];
     for (const w of s.witnesses || []) { const r = await v.verifyTimestamp(w.tokenBase64, sth.anchorDigest); witnessed.push({ authority: r.tsa || w.name, root: r.root || null, genTime: r.genTime || null, verified: r.ok, note: r.note, tokenBase64: w.tokenBase64 }); }
     checks.timestamps = witnessed.some((w) => w.verified);
+    // Co-signatures are optional, but any that is published must be valid.
+    const cosignatures = [];
+    for (const c of s.cosignatures || []) {
+      const co = cosigners[c.kid];
+      const ok = Boolean(co) && await v.verifySth(sth, c.signature, co.publicKeyJwk);
+      cosignatures.push({ kid: c.kid, name: co?.name || c.name, role: co?.role || c.role, signature: c.signature, verified: ok });
+      if (!ok) checks.cosignatures = false;
+    }
     const failed = Object.entries(checks).filter(([, ok]) => !ok).map(([k]) => k);
     if (failed.length) { alarm(`${where} failed: ${failed.join(', ')}.`); break; }
     const d = new Date(sth.issuedAt);
-    writeJson(`log/${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(sth.toSeq).padStart(9, '0')}-${sth.anchorId}.json`, { sth, sthSignature: s.sthSignature, witnesses: witnessed, checks, witnessedAt: new Date().toISOString() });
+    writeJson(`log/${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(sth.toSeq).padStart(9, '0')}-${sth.anchorId}.json`, { sth, sthSignature: s.sthSignature, witnesses: witnessed, cosignatures, checks, witnessedAt: new Date().toISOString() });
     Object.assign(state, { lastToSeq: sth.toSeq, lastAnchorId: sth.anchorId, lastAnchorDigest: sth.anchorDigest, lastIssuedAt: sth.issuedAt, witnessedBatches: state.witnessedBatches + 1 });
     console.log(`Witnessed ${where}: ${witnessed.filter((w) => w.verified).map((w) => w.root).join(' + ')}`);
   }
+}
+
+// 4. Signed attestation: record each new one once its signature checks against a witnessed key.
+const latest = att.data.latestAttestation;
+if (latest?.signedStatement) {
+  const st = latest.signedStatement;
+  const f = `attestations/${st.periodEnd.slice(0, 10)}-${st.kid}.json`;
+  const seen = readJson(f, null);
+  const witnessedKeys = fs.existsSync('keys') ? fs.readdirSync('keys').map((x) => readJson(`keys/${x}`)) : [];
+  const r = await v.verifyAttestation(st, latest.signature, witnessedKeys);
+  if (!r.ok) alarm(`The published attestation for ${st.periodStart.slice(0, 10)} to ${st.periodEnd.slice(0, 10)} did not verify: ${r.note}`);
+  else if (seen && (canonical(seen.signedStatement) !== canonical(st) || seen.signature !== latest.signature)) alarm(`The attestation for ${st.periodEnd.slice(0, 10)} changed after it was witnessed.`);
+  else if (!seen) { writeJson(f, { signedStatement: st, signature: latest.signature, ledgerSeq: latest.ledgerSeq, witnessedAt: new Date().toISOString() }); console.log(`Attestation witnessed: ${f}`); }
 }
 
 writeJson('state.json', { ...state, lastRun: new Date().toISOString() });
