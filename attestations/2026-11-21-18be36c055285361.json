@@ -1,0 +1,64 @@
+{
+  "signedStatement": {
+    "format": "OBSIGNIA-ATTESTATION",
+    "version": 1,
+    "issuer": "Kaelum Technologies Ltd",
+    "kid": "18be36c055285361",
+    "periodStart": "2026-08-23T21:16:59.006Z",
+    "periodEnd": "2026-11-21T21:16:59.006Z",
+    "figures": {
+      "entriesRecorded": 180,
+      "entriesByType": {
+        "KVI_ASSESSMENT": 62,
+        "ACCOUNT_STATE_CHANGE": 20,
+        "RECONCILIATION_SNAPSHOT": 36,
+        "REGULATORY_MODE_CHANGE": 1,
+        "TOPUP": 1,
+        "LEDGER_CORRECTION": 6,
+        "AGENT_PURCHASE": 5,
+        "TRANSACTION": 22,
+        "REWARD_ISSUED": 2,
+        "RECONCILIATION_RESEAL": 22,
+        "INTEGRITY_NOTICE": 1,
+        "PRICE_ATTESTATION": 1,
+        "BALANCE_COMMITMENT": 1
+      },
+      "chain": {
+        "intact": true,
+        "totalEntries": 191,
+        "headSeq": 191,
+        "headHash": "bb7a98f7688c14a9a56aa67f507d77649f6b83c06b18ba56b49e1cfe381dc263",
+        "failure": null
+      },
+      "anchors": {
+        "confirmed": 65,
+        "failed": 0,
+        "signed": 1,
+        "witnessedByTwoAuthorities": 1,
+        "cosignatures": 0
+      },
+      "receiptsIssued": 23,
+      "sealedContents": 23,
+      "priceAttestations": {
+        "count": 1,
+        "pricesGbp": [
+          "0.20"
+        ]
+      },
+      "balanceCommitments": 1,
+      "keys": [
+        {
+          "kid": "18be36c055285361",
+          "custody": "platform",
+          "status": "active"
+        }
+      ]
+    },
+    "lastAnchorId": "ANCH-9a4f22e2-7025-458d-aea8-5abca3870fa2",
+    "lastAnchorDigest": "81879080ed09ed824f2bbfa7d9b696bd622ad1b93339e7a178a48458dea26db5",
+    "issuedAt": "2026-11-21T21:16:59.781Z"
+  },
+  "signature": "EwPwz73MUHoqQofP8tqHJHHfoonkKHojiqcAqZufONG4WAOmMe91QElhpnX/ry84pJofGHk6MlMJNaJO+QWeCg==",
+  "ledgerSeq": 192,
+  "witnessedAt": "2026-11-21T22:06:06.605Z"
+}

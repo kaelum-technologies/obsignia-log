@@ -1,0 +1,30 @@
+{
+  "kid": "a40b2dc1ae25c24f",
+  "alg": "Ed25519",
+  "publicKeyJwk": {
+    "crv": "Ed25519",
+    "kty": "OKP",
+    "x": "rx_4xwiNe7yxbMluE44WnALcfQOksvixtmcesRaUKwI"
+  },
+  "custody": "remote",
+  "status": "active",
+  "activatedAt": "2026-11-21T21:59:52.253Z",
+  "retiredAt": null,
+  "endorsement": {
+    "statement": {
+      "format": "OBSIGNIA-KEY-ENDORSEMENT",
+      "version": 1,
+      "newKid": "a40b2dc1ae25c24f",
+      "publicKeyJwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "rx_4xwiNe7yxbMluE44WnALcfQOksvixtmcesRaUKwI"
+      },
+      "custody": "remote",
+      "endorsedBy": "18be36c055285361",
+      "endorsedAt": "2026-11-21T21:59:52.251Z"
+    },
+    "signature": "OLa/pAw/gvbkrnrB2Qj59rB6JFixou0ascKZ27bMv2fxPdEzaZhB4uPjSYRGOB8CU+dE1erkM2pWetUq5u3dAQ=="
+  },
+  "firstWitnessedAt": "2026-11-21T22:06:05.970Z"
+}
