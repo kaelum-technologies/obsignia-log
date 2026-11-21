@@ -1,0 +1,11 @@
+{
+  "kid": "18be36c055285361",
+  "alg": "Ed25519",
+  "publicKeyJwk": {
+    "crv": "Ed25519",
+    "kty": "OKP",
+    "x": "gsHkn7v_G-2lVnf54VQbYeBMxQPTLBp7UtXTyRO72Ts"
+  },
+  "activatedAt": "2026-11-21T20:03:59.387Z",
+  "firstWitnessedAt": "2026-11-21T20:07:22.701Z"
+}
