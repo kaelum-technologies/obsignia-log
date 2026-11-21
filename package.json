@@ -1,0 +1,9 @@
+{
+  "name": "obsignia-log",
+  "private": true,
+  "type": "module",
+  "description": "Independent public witness and offline verifier for OBSIGNIA, the KAELUM integrity ledger.",
+  "engines": { "node": ">=20" },
+  "scripts": { "witness": "node witness.mjs", "verify": "node verify.mjs" },
+  "dependencies": { "asn1js": "3.1.0", "pkijs": "3.4.3" }
+}
