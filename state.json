@@ -1,8 +1,8 @@
 {
-  "lastToSeq": 193,
-  "lastAnchorId": "ANCH-b904a88d-8e80-4668-830c-190e654e16d9",
-  "lastAnchorDigest": "d2b46032f317b31291d3f17b936a95534e0e6a482e2b6400aadb34d8bb83de74",
-  "witnessedBatches": 2,
-  "lastIssuedAt": "2026-11-21T22:04:01.642Z",
-  "lastRun": "2026-11-21T22:06:06.605Z"
+  "lastToSeq": 194,
+  "lastAnchorId": "ANCH-fb232095-a06d-4cc6-a65c-287c232209b3",
+  "lastAnchorDigest": "bb01fac06e27ef5205b29f7d8a69668934e1d4d331e4fdb337921652b2e5f566",
+  "witnessedBatches": 3,
+  "lastIssuedAt": "2026-11-22T00:03:59.740Z",
+  "lastRun": "2026-11-22T00:23:27.349Z"
 }
